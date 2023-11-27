@@ -1,11 +1,10 @@
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from sqlalchemy import Uuid
-import uuid
+from uuid import UUID, uuid4
 
 
 class Base(DeclarativeBase):
     pass
 
 
-class BasicObject(Base):
-    id: Mapped[Uuid] = mapped_column(primary_key=True, default=uuid.uuid4)
+class BasicObject:
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
