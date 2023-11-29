@@ -65,7 +65,7 @@ class Answer(BasicObject, Base):
     __tablename__ = "answer"
 
     question_id: Mapped[UUID] = mapped_column(ForeignKey("question.id"))
-    question: Mapped["Question"] = relationship(back_populates="answer")
+    question: Mapped["Question"] = relationship(back_populates="answers")
 
     answer_template_id: Mapped[UUID] = mapped_column(
             ForeignKey("answer_template.id"))
@@ -79,6 +79,8 @@ class User(BasicObject, Base):
     __tablename__ = "user"
 
     is_active: Mapped[bool] = mapped_column(default=True)
+    contact_id: Mapped[str] = mapped_column()
+    name: Mapped[str] = mapped_column()
 
     answer_templates: Mapped[List["AnswerTemplate"]] = relationship(
             back_populates="sender")
@@ -89,6 +91,11 @@ class User(BasicObject, Base):
     # one-to-many User -> UserGroup
     user_groups: Mapped[List["UserGroup"]] = relationship(
             back_populates="user")
+
+    def __init__(self, name: str, contact_id: str, is_active=True):
+        self.name = name
+        self.contact_id = contact_id
+        self.is_active = is_active
 
 
 class Group(BasicObject, Base):
