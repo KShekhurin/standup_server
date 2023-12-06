@@ -4,7 +4,7 @@ from marshmallow import Schema, fields, ValidationError
 from sqlalchemy import select
 import uuid
 
-from ..models import User, Group
+from ..models import User, Group, UserGroup
 from app import Session
 
 
@@ -114,6 +114,50 @@ def add_group_route():
         return jsonify({"id": group_id}), 200
     except ValidationError as err:
         return err.message, 400
+
+
+@bp.route("/group/<string:group_id>/user/<string:user_id>", methods=["POST"])
+def add_user_to_group(group_id: str, user_id: str):
+    try:
+        group_uuid = uuid.UUID(group_id)
+        user_uuid = uuid.UUID(user_id)
+
+        with Session.begin() as session:
+            user = get_object_by_id(session, User, user_uuid)
+            group = get_object_by_id(session, Group, group_uuid)
+
+            if user is None:
+                return jsonify({"err": "User not found"}), 404
+            if group is None:
+                return jsonify({"err": "Group not found"}), 404
+
+            user.groups.append(group)
+
+        return "Ok", 200
+    except ValueError:
+        return jsonify({"err": "UUID is incorrect"}), 400
+
+
+@bp.route("/group/<string:group_id>/user/<string:user_id>", methods=["DELETE"])
+def remove_user_from_group_route(group_id: str, user_id: str):
+    try:
+        group_uuid = uuid.UUID(group_id)
+        user_uuid = uuid.UUID(user_id)
+
+        with Session.begin() as session:
+            user = get_object_by_id(session, User, user_uuid)
+            group = get_object_by_id(session, Group, group_uuid)
+
+            if user is None:
+                return jsonify({"err": "User not found"}), 404
+            if group is None:
+                return jsonify({"err": "Group not found"}), 404
+
+            group.users.remove(user)
+
+        return "Ok", 200
+    except ValueError:
+        return jsonify({"err": "UUID is incorrect"}), 400
 
 
 @bp.route("/group/<string:id>", methods=["DELETE"])
