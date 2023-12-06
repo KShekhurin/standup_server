@@ -4,21 +4,52 @@ from marshmallow import Schema, fields, ValidationError
 from sqlalchemy import select
 import uuid
 
-from ..models import User
+from ..models import User, Group
 from app import Session
 
 
 # json body user validation schema
 class UserSchema(Schema):
     id = fields.UUID(dump_only=True)
-    is_active = fields.Bool(default=True, required=True)
+    is_active = fields.Bool(load_default=True)
     contact_id = fields.String(required=True)
     name = fields.String(required=True)
 
+    groups_ids = fields.List(fields.UUID(), load_only=True, required=False)
 
-def get_user_by_id(session, id: uuid.UUID) -> User | None:
-    statement = select(User).where(User.id == id)
+
+# json body group validation schema
+class GroupSchema(Schema):
+    id = fields.UUID(dump_only=True)
+    name = fields.String(required=True)
+    contact_id = fields.String(required=True)
+    is_active = fields.Bool(load_default=True)
+
+    users_id = fields.List(fields.UUID(), load_only=True, required=False)
+
+
+def get_object_by_id(session, model, id: uuid.UUID):
+    statement = select(model).where(model.id == id)
     return session.scalars(statement).one_or_none()
+
+
+def template_delete_object(model, id: uuid.UUID):
+    try:
+        uuid_id = uuid.UUID(id)
+        obj = None
+
+        with Session.begin() as session:
+            obj = get_object_by_id(session, model, uuid_id)
+
+            if obj is None:
+                return jsonify(
+                        {"msg": "User with such UUID is not found"}), 404
+
+            session.delete(obj)
+
+        return "Ok", 200
+    except ValueError:
+        return jsonify({"msg": "Invalid UUID!"}), 400
 
 
 @bp.route("/user", methods=["POST"])
@@ -43,22 +74,7 @@ def add_user_route():
 
 @bp.route("/user/<string:id>", methods=["DELETE"])
 def delete_user_route(id: str):
-    try:
-        uuid_id = uuid.UUID(id)
-        user = None
-
-        with Session.begin() as session:
-            user = get_user_by_id(session, uuid_id)
-
-            if user is None:
-                return jsonify(
-                        {"msg": "User with such UUID is not found"}), 404
-
-            session.delete(user)
-
-        return "Ok", 200
-    except ValueError:
-        return jsonify({"msg": "Invalid UUID!"}), 400
+    return template_delete_object(User, id)
 
 
 @bp.route("/user/<string:id>", methods=["GET"])
@@ -67,7 +83,7 @@ def get_user_route(id: str):
         uuid_id = uuid.UUID(id)
 
         with Session.begin() as session:
-            user = get_user_by_id(session, uuid_id)
+            user = get_object_by_id(session, User, uuid_id)
 
             if user is None:
                 return jsonify(
@@ -78,3 +94,28 @@ def get_user_route(id: str):
         return UserSchema().dump(user), 200
     except ValueError:
         return jsonify({"msg": "Invalid UUID"}), 400
+
+
+@bp.route("/group", methods=["POST"])
+def add_group_route():
+    try:
+        body = request.get_json()
+        group = GroupSchema().load(body)
+
+        group_model = Group(
+                group["name"], group["contact_id"], group["is_active"])
+        group_id = ""
+
+        with Session.begin() as session:
+            session.add(group_model)
+            session.flush()
+            group_id = str(group_model.id)
+
+        return jsonify({"id": group_id}), 200
+    except ValidationError as err:
+        return err.message, 400
+
+
+@bp.route("/group/<string:id>", methods=["DELETE"])
+def delete_group_route(id: str):
+    return template_delete_object(Group, id)
