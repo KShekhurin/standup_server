@@ -103,6 +103,7 @@ class Group(BasicObject, Base):
 
     name: Mapped[str] = mapped_column()
     is_active: Mapped[bool] = mapped_column(default=True)
+    contact_id: Mapped[str] = mapped_column()
 
     # many-to-many Group -> UserGroup -> User
     users: Mapped[List["User"]] = relationship(
@@ -110,6 +111,11 @@ class Group(BasicObject, Base):
     # one-to-many Group -> UserGroup
     user_groups: Mapped[List["UserGroup"]] = relationship(
             back_populates="group")
+
+    def __init__(self, name: str, contact_id: str, is_active=True):
+        self.name = name
+        self.contact_id = contact_id
+        self.is_active = is_active
 
 
 class UserGroup(Base):
