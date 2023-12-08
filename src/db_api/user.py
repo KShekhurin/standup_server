@@ -117,7 +117,7 @@ def add_group_route():
 
 
 @bp.route("/group/<string:group_id>/user/<string:user_id>", methods=["POST"])
-def add_user_to_group(group_id: str, user_id: str):
+def add_user_to_group_route(group_id: str, user_id: str):
     try:
         group_uuid = uuid.UUID(group_id)
         user_uuid = uuid.UUID(user_id)
