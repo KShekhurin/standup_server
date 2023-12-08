@@ -28,6 +28,12 @@ class Template(BasicObject, Base):
     answers: Mapped[List["AnswerTemplate"]] = relationship(
             back_populates="template")
 
+    def __init__(self, name: str):
+        self.name = name
+
+    def from_dict(data: dict):
+        return Template(data["name"])
+
 
 class Question(BasicObject, Base):
     __tablename__ = "question"
@@ -38,10 +44,15 @@ class Question(BasicObject, Base):
     template: Mapped["Template"] = relationship(back_populates="questions")
 
     text: Mapped[str] = mapped_column()
-    input_type: Mapped[int] = mapped_column(default=InputTypes.TEXT)
+    input_type: Mapped[int] = mapped_column(default=InputTypes.TEXT.value)
     order: Mapped[int] = mapped_column(default=0)
 
     answers: Mapped[List["Answer"]] = relationship(back_populates="question")
+
+    def __init__(self, text: str, input_type: InputTypes, order: int):
+        self.text = text
+        self.input_type = input_type.value
+        self.order = order
 
 
 class AnswerTemplate(BasicObject, Base):
