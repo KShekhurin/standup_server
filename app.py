@@ -11,8 +11,10 @@ Session = sessionmaker(engine)
 
 def init_app():
     from src.db_api import bp as db_api_blueprint
+    from src.client import bp as client_blueprint
 
     app.register_blueprint(db_api_blueprint, url_prefix="/api")
+    app.register_blueprint(client_blueprint, url_prefix="/client")
 
     app.run(debug=True, port="9000")
 
